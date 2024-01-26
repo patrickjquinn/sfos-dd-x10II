@@ -1,0 +1,494 @@
+diff -ru original/usr/lib/qt5/qml/Sailfish/Silica/PageStack.qml patched/usr/lib/qt5/qml/Sailfish/Silica/PageStack.qml
+--- original/usr/lib/qt5/qml/Sailfish/Silica/PageStack.qml	2021-03-03 01:00:00.000000000 +0100
++++ patched/usr/lib/qt5/qml/Sailfish/Silica/PageStack.qml	2021-06-21 22:19:26.150798427 +0200
+@@ -80,8 +80,14 @@
+ import Sailfish.Silica.private 1.0 as Private
+ import "PageStack.js" as PageStack
+ import "private"
++import org.nemomobile.configuration 1.0
+ 
+ PageStackBase {
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property real pageTransitions: 1.0
++    }
+     id: root
+ 
+     width: parent.width
+@@ -106,7 +112,7 @@
+     property Component pageBackground
+ 
+     // Duration of transition animations (in ms)
+-    property int _transitionDuration: 400
++    property int _transitionDuration: 400 / animationSettings.pageTransitions
+ 
+     property Item _pageStackIndicator
+     property Item _pendingContainer
+diff -ru original/usr/lib/qt5/qml/Sailfish/Silica/private/PulleyMenuBase.qml patched/usr/lib/qt5/qml/Sailfish/Silica/private/PulleyMenuBase.qml
+--- original/usr/lib/qt5/qml/Sailfish/Silica/private/PulleyMenuBase.qml	2021-04-09 17:58:51.000000000 +0200
++++ patched/usr/lib/qt5/qml/Sailfish/Silica/private/PulleyMenuBase.qml	2021-06-21 22:19:26.150798427 +0200
+@@ -36,8 +36,14 @@
+ import Sailfish.Silica 1.0
+ import Sailfish.Silica.private 1.0
+ import "Util.js" as Util
++import org.nemomobile.configuration 1.0
+ 
+ SilicaMouseArea {
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property bool pulleyHighlight: true
++    }
+     id: pulleyBase
+ 
+     /*
+@@ -478,11 +484,15 @@
+         states: [
+             State {
+                 name: "click"
+-                when: _doClick && !_quickSelected
++                when: _doClick && !_quickSelected && animationSettings.pulleyHighlight
+             },
+             State {
+                 name: "quickselectclick"
+-                when: _doClick && _quickSelected
++                when: _doClick && _quickSelected && animationSettings.pulleyHighlight
++            },
++            State {
++                name: "instantselectclick"
++                when: _doClick && !animationSettings.pulleyHighlight
+             },
+             State {
+                 name: "enterView"
+@@ -581,6 +591,11 @@
+                 }
+             },
+             Transition {
++                onRunningChanged: running ? earlyClickTimer.restart() : _handleClicked()
++
++                to: "instantselectclick"
++            },
++            Transition {
+                 to: "enterView"
+                 SequentialAnimation {
+                     FadeAnimation {
+Only in patched/usr/share: jolla-settings
+diff -ru original/usr/share/lipstick-jolla-home-qt5/launcher/Launcher.qml patched/usr/share/lipstick-jolla-home-qt5/launcher/Launcher.qml
+--- original/usr/share/lipstick-jolla-home-qt5/launcher/Launcher.qml	2021-05-19 20:06:15.000000000 +0200
++++ patched/usr/share/lipstick-jolla-home-qt5/launcher/Launcher.qml	2021-06-21 22:19:26.150798427 +0200
+@@ -15,10 +15,17 @@
+ import Sailfish.Lipstick 1.0
+ import Nemo.DBus 2.0
+ import com.jolla.lipstick 0.1
++import org.nemomobile.configuration 1.0
+ 
+ SilicaListView {
+     id: launcherPager
+ 
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property real topMenuLauncher: 1.0
++    }
++
+     property bool launcherActive: Lipstick.compositor.launcherLayer.active
+     onLauncherActiveChanged: if (!launcherActive) { resetPosition(400) }
+ 
+@@ -61,7 +68,7 @@
+ 
+     function scroll(up) {
+         contentYAnimation.to = up ? 0 : contentHeight - launcherPager.height
+-        contentYAnimation.duration = Math.abs(contentY - contentYAnimation.to)
++        contentYAnimation.duration = Math.abs(contentY - contentYAnimation.to) / animationSettings.topMenuLauncher
+         contentYAnimation.start()
+     }
+ 
+@@ -105,7 +112,7 @@
+             id: restoreSnapModeContentAnimation
+             target: launcherPager
+             property: "contentY"
+-            duration: 200
++            duration: 200 / animationSettings.topMenuLauncher
+             easing.type: Easing.InOutQuad
+         }
+         ScriptAction {
+diff -ru original/usr/share/lipstick-jolla-home-qt5/layers/EdgeLayer.qml patched/usr/share/lipstick-jolla-home-qt5/layers/EdgeLayer.qml
+--- original/usr/share/lipstick-jolla-home-qt5/layers/EdgeLayer.qml	2021-05-19 20:06:15.000000000 +0200
++++ patched/usr/share/lipstick-jolla-home-qt5/layers/EdgeLayer.qml	2021-06-21 22:24:56.823866954 +0200
+@@ -3,10 +3,17 @@
+ import Sailfish.Silica 1.0
+ import org.nemomobile.lipstick 0.1
+ import Sailfish.Lipstick 1.0
++import org.nemomobile.configuration 1.0
+ 
+ Layer {
+     id: edgeLayer
+ 
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property real topMenuLauncher: 1.0
++    }
++
+     property alias edgeFilter: peekFilter
+     property MouseArea interactiveArea
+ 
+@@ -178,13 +185,13 @@
+             NumberAnimation {
+                 target: edgeLayer
+                 property: "x"
+-                duration: 250
++                duration: 250 / animationSettings.topMenuLauncher
+                 easing.type: Easing.OutQuad
+             }
+             NumberAnimation {
+                 target: edgeLayer
+                 property: "y"
+-                duration: 250
++                duration: 250 / animationSettings.topMenuLauncher
+                 easing.type: Easing.OutQuad
+             }
+             PropertyAction {
+@@ -199,13 +206,13 @@
+             NumberAnimation {
+                 target: edgeLayer
+                 property: "x"
+-                duration: 300
++                duration: 300 / animationSettings.topMenuLauncher
+                 easing.type: Easing.InOutQuad
+             }
+             NumberAnimation {
+                 target: edgeLayer
+                 property: "y"
+-                duration: 300
++                duration: 300 / animationSettings.topMenuLauncher
+                 easing.type: Easing.InOutQuad
+             }
+             PropertyAction {
+@@ -224,15 +231,15 @@
+             id: hintShowAnimation
+             target: edgeLayer
+             property: "_hintProgress"
+-            duration: 300
++            duration: 300 / animationSettings.topMenuLauncher
+             to: Theme.iconSizeLauncher * 2
+             easing.type: Easing.InOutQuad
+         }
+-        PauseAnimation { id: hintPauseAnimation; duration: 2000 }
++        PauseAnimation { id: hintPauseAnimation; duration: 2000 / animationSettings.topMenuLauncher }
+         NumberAnimation {
+             target: edgeLayer
+             property: "_hintProgress"
+-            duration: 300
++            duration: 300 / animationSettings.topMenuLauncher
+             to: 0
+             easing.type: Easing.InOutQuad
+         }
+diff -ru original/usr/share/lipstick-jolla-home-qt5/layers/HomeLayer.qml patched/usr/share/lipstick-jolla-home-qt5/layers/HomeLayer.qml
+--- original/usr/share/lipstick-jolla-home-qt5/layers/HomeLayer.qml	2021-05-19 20:06:15.000000000 +0200
++++ patched/usr/share/lipstick-jolla-home-qt5/layers/HomeLayer.qml	2021-06-21 22:19:26.150798427 +0200
+@@ -19,6 +19,12 @@
+ Pannable {
+     id: homescreen
+ 
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property real appSwitch: 1.0
++    }
++
+     anchors.fill: parent
+ 
+     property alias events: eventsLayer
+@@ -40,7 +46,7 @@
+                 / Lipstick.compositor.topmostWindowHeight
+     Behavior on _minimizedScale {
+         NumberAnimation {
+-            duration: 200
++            duration: 200 / animationSettings.appSwitch
+             easing.type: Easing.InOutQuad
+         }
+     }
+@@ -234,7 +240,7 @@
+             }
+             Behavior on scale {
+                 enabled: switcherLayer.visible
+-                NumberAnimation { duration: 250; easing.type: Easing.OutQuad }
++                NumberAnimation { duration: 250 / animationSettings.appSwitch; easing.type: Easing.OutQuad }
+             }
+ 
+             anchors { rightMargin: -rightItem.minimizeMargin }
+diff -ru original/usr/share/lipstick-jolla-home-qt5/layers/StackLayer.qml patched/usr/share/lipstick-jolla-home-qt5/layers/StackLayer.qml
+--- original/usr/share/lipstick-jolla-home-qt5/layers/StackLayer.qml	2021-05-19 20:06:15.000000000 +0200
++++ patched/usr/share/lipstick-jolla-home-qt5/layers/StackLayer.qml	2021-06-21 22:25:38.372001209 +0200
+@@ -8,11 +8,18 @@
+ import QtQuick 2.0
+ import Sailfish.Silica 1.0
+ import org.nemomobile.lipstick 0.1
++import org.nemomobile.configuration 1.0
+ import "../backgrounds"
+ 
+ Layer {
+     id: layer
+ 
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property real appSwitch: 1.0
++    }
++
+     property bool closingToHome
+     property bool delaySwitch
+     property bool exclusive
+@@ -318,7 +325,7 @@
+         // visible so the opacity should be set to 1.0 so its visible immediately when the layer
+         // above goes away.
+         if (windowVisible && (active || peekedAt)) {
+-            delayAnimation.duration = quick ? 0 : 150
++            delayAnimation.duration = quick ? 0 : 150 / animationSettings.appSwitch
+             showAnimation.restart()
+         } else {
+             opacity = 1.0
+@@ -366,7 +373,7 @@
+         // capturing the fade in snapshot.  This is the same amount of time it takes the
+         // switcher scale animation to complete so the animations will appear sequential.
+ 
+-        PauseAnimation { id: delayAnimation; duration: 150 }
++        PauseAnimation { id: delayAnimation; duration: 150 / animationSettings.appSwitch }
+         ScriptAction {
+             script: {
+                 if (active) {
+@@ -390,7 +397,7 @@
+         }
+         FadeAnimator {
+             target: layer
+-            duration: 300
++            duration: 300 / animationSettings.appSwitch
+             from: 0.0
+             to: 1.0
+             easing.type: Easing.InOutQuad
+diff -ru original/usr/share/lipstick-jolla-home-qt5/main/PeekArea.qml patched/usr/share/lipstick-jolla-home-qt5/main/PeekArea.qml
+--- original/usr/share/lipstick-jolla-home-qt5/main/PeekArea.qml	2021-05-19 20:06:15.000000000 +0200
++++ patched/usr/share/lipstick-jolla-home-qt5/main/PeekArea.qml	2021-06-21 22:19:26.154798440 +0200
+@@ -9,10 +9,17 @@
+ import Sailfish.Silica 1.0
+ import Sailfish.Lipstick 1.0
+ import org.nemomobile.lipstick 0.1
++import org.nemomobile.configuration 1.0
+ 
+ Item {
+     id: peekArea
+ 
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property real appSwitch: 1.0
++    }
++
+     property alias transitionItem: transitionItem
+     property alias snapshotSource: snapshot
+     property alias underlayItem: underlay
+@@ -54,7 +61,7 @@
+                 closing = true
+                 closeAnimating = true
+                 aboutToClose()
+-                clipEndAnimation.duration = 600
++                clipEndAnimation.duration = 600 / animationSettings.appSwitch
+                 _startFade()
+             } else {
+                 closing = false
+@@ -89,7 +96,7 @@
+     Behavior on opacity {
+         id: opacityBehavior
+         enabled: false
+-        SmoothedAnimation { id: opacityAnimation; duration: 300; velocity: 1000 / duration }
++        SmoothedAnimation { id: opacityAnimation; duration: 300 / animationSettings.appSwitch; velocity: 1000 / duration }
+     }
+ 
+     Item {
+@@ -149,9 +156,9 @@
+             opacityBehavior.enabled = false
+             if (peekFilter.closing) {
+                 peekArea.closeAnimating = true
+-                clipEndAnimation.duration = 400
++                clipEndAnimation.duration = 400 / animationSettings.appSwitch
+             } else {
+-                clipEndAnimation.duration = 200
++                clipEndAnimation.duration = 200 / animationSettings.appSwitch
+                 clipEndAnimation.to = 0
+             }
+ 
+@@ -161,7 +168,7 @@
+             opacityBehavior.enabled = false
+             peekArea.closing = true
+             peekArea.closeAnimating = true
+-            clipEndAnimation.duration = 300 * (clipEndAnimation.to - peekFilter.absoluteProgress) / clipEndAnimation.to
++            clipEndAnimation.duration = (300 * (clipEndAnimation.to - peekFilter.absoluteProgress) / clipEndAnimation.to) / animationSettings.appSwitch
+             peekArea._startFade()
+         }
+ 
+diff -ru original/usr/share/lipstick-jolla-home-qt5/switcher/SwitcherItem.qml patched/usr/share/lipstick-jolla-home-qt5/switcher/SwitcherItem.qml
+--- original/usr/share/lipstick-jolla-home-qt5/switcher/SwitcherItem.qml	2021-05-19 20:06:15.000000000 +0200
++++ patched/usr/share/lipstick-jolla-home-qt5/switcher/SwitcherItem.qml	2021-06-21 22:19:26.154798440 +0200
+@@ -16,9 +16,17 @@
+ import Sailfish.Lipstick 1.0
+ import "../backgrounds"
+ import "../main"
++import org.nemomobile.configuration 1.0
+ 
+ EditableGridDelegate {
+     id: wrapper
++
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property real appSwitch: 1.0
++    }
++
+     property bool currentApp: windowId != 0 && Lipstick.compositor.topmostWindowId == windowId
+     readonly property bool quickSwitchingApp: index == secondLastAppIndex && Lipstick.compositor.quickAppToggleGestureExceeded
+     property int coverId
+@@ -134,10 +142,10 @@
+     }
+     SequentialAnimation {
+         id: homePeekAnimation
+-        PauseAnimation { duration: 200 }
++        PauseAnimation { duration: 200 / animationSettings.appSwitch }
+         FadeAnimation {
+             target: contentItem
+-            duration: 400
++            duration: 400 / animationSettings.appSwitch
+             to: 1.0
+         }
+     }
+@@ -183,13 +191,13 @@
+ 
+         Behavior on rotation {
+             SequentialAnimation {
+-                PauseAnimation { duration: 250 }
++                PauseAnimation { duration: 250 / animationSettings.appSwitch }
+                 PropertyAction { }
+             }
+         }
+ 
+         Behavior on opacity {
+-            FadeAnimation { id: coverOpacityAnimation; duration: 500 }
++            FadeAnimation { id: coverOpacityAnimation; duration: 500 / animationSettings.appSwitch }
+         }
+     }
+ 
+@@ -200,7 +208,7 @@
+         icon: launcherItem ? launcherItem.iconId : ""
+         layer.effect: null
+         opacity: hideCover ? 1.0 : 0.0
+-        Behavior on opacity { FadeAnimation { duration: 500 } }
++        Behavior on opacity { FadeAnimation { duration: 500 / animationSettings.appSwitch3 } }
+     }
+ 
+     Loader {
+diff -ru original/usr/share/lipstick-jolla-home-qt5/topmenu/AmbienceSelector.qml patched/usr/share/lipstick-jolla-home-qt5/topmenu/AmbienceSelector.qml
+--- original/usr/share/lipstick-jolla-home-qt5/topmenu/AmbienceSelector.qml	2021-05-19 20:06:15.000000000 +0200
++++ patched/usr/share/lipstick-jolla-home-qt5/topmenu/AmbienceSelector.qml	2021-06-21 22:19:26.154798440 +0200
+@@ -21,6 +21,12 @@
+ Item {
+     id: root
+ 
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property real topMenuLauncher: 1.0
++    }
++
+     property int itemSize
+     property int viewHeight
+     property real verticalOffset
+@@ -76,13 +82,13 @@
+ 
+             SequentialAnimation {
+                 PropertyAction { property: "z"; value: -1 }
+-                NumberAnimation { property: "x"; from: root.itemSize * (addTransition.ViewTransition.targetIndexes[0] - 1); duration: 500; easing.type: Easing.InOutQuad }
++                NumberAnimation { property: "x"; from: root.itemSize * (addTransition.ViewTransition.targetIndexes[0] - 1); duration: 500 / animationSettings.topMenuLauncher; easing.type: Easing.InOutQuad }
+                 PropertyAction { property: "z"; value: 0 }
+             }
+         }
+ 
+         displaced: Transition {
+-            NumberAnimation { property: "x"; duration: 500; easing.type: Easing.InOutQuad }
++            NumberAnimation { property: "x"; duration: 500 / animationSettings.topMenuLauncher; easing.type: Easing.InOutQuad }
+         }
+ 
+         model: AmbienceInstallModel {
+@@ -226,7 +232,7 @@
+ 
+         transitions: Transition {
+             to: "expanded"
+-            NumberAnimation { properties: "y"; duration: 200 }
++            NumberAnimation { properties: "y"; duration: 200 / animationSettings.topMenuLauncher }
+         }
+     }
+ }
+diff -ru original/usr/share/lipstick-jolla-home-qt5/topmenu/TopMenu.qml patched/usr/share/lipstick-jolla-home-qt5/topmenu/TopMenu.qml
+--- original/usr/share/lipstick-jolla-home-qt5/topmenu/TopMenu.qml	2021-05-19 20:06:15.000000000 +0200
++++ patched/usr/share/lipstick-jolla-home-qt5/topmenu/TopMenu.qml	2021-06-21 22:27:50.916429543 +0200
+@@ -21,9 +21,15 @@
+ SilicaFlickable {
+     id: topMenu
+ 
++    ConfigurationGroup {
++        id: animationSettings
++        path: "/desktop/sailfish/silica/animations"
++        property real topMenuLauncher: 1.0
++    }
++
+     function scroll(up) {
+         scrollAnimation.to = up ? 0 : contentHeight - height
+-        scrollAnimation.duration = Math.abs(contentY - scrollAnimation.to) * 1.5
++        scrollAnimation.duration = Math.abs(contentY - scrollAnimation.to) * 1.5 / animationSettings.topMenuLauncher
+         scrollAnimation.start()
+     }
+ 
+@@ -72,7 +78,7 @@
+         target: topMenu
+         property: "contentY"
+         easing.type: Easing.InOutQuad
+-        duration: 300
++        duration: 300 / animationSettings.topMenuLauncher
+     }
+ 
+     signal shutdown()
+@@ -157,14 +163,14 @@
+                 NumberAnimation {
+                     target: lockButton
+                     property: "offset"
+-                    duration: 400
++                    duration: 400 / animationSettings.topMenuLauncher
+                     easing.type: Easing.InOutQuad
+                 }
+                 NumberAnimation {
+                     target: topMenu
+                     property: "contentY"
+                     to: 0
+-                    duration: 400
++                    duration: 400 / animationSettings.topMenuLauncher
+                     easing.type: Easing.InOutQuad
+                 }
+             }
+@@ -298,7 +304,7 @@
+                                 to: "expanded"
+                                 NumberAnimation {
+                                     properties: "y"
+-                                    duration: Lipstick.compositor.powerKeyPressed ? scrollAnimation.duration : 200
++                                    duration: (Lipstick.compositor.powerKeyPressed ? scrollAnimation.duration : 200) / animationSettings.topMenuLauncher
+                                 }
+                             }
+                         }
+@@ -425,7 +431,7 @@
+                             to: "expanded"
+                             NumberAnimation {
+                                 properties: "y"
+-                                duration: Lipstick.compositor.powerKeyPressed ? scrollAnimation.duration : 200
++                                duration: (Lipstick.compositor.powerKeyPressed ? scrollAnimation.duration : 200) / animationSettings.topMenuLauncher
+                             }
+                         }
+                     }
