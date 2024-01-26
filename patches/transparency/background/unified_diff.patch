@@ -1,0 +1,73 @@
+## Solid colors for all apps by default
+--- /usr/lib64/qt5/qml/Sailfish/Silica/Page.qml.orig
++++ /usr/lib64/qt5/qml/Sailfish/Silica/Page.qml
+@@ -95,7 +95,8 @@
+     property Item pageContainer
+     property Item __stack_container
+ 
+-    property color backgroundColor: Theme.rgba(palette.overlayBackgroundColor, 0)
++    //property color backgroundColor: Theme.rgba(palette.overlayBackgroundColor, 0)
++    property color backgroundColor: palette.overlayBackgroundColor
+     property Component background: {
+         if (backgroundColor.a !== 0) {
+             return backgroundComponent
+             
+## Solid colors for Lipstick
+--- /usr/share/lipstick-jolla-home-qt5/backgrounds/BlurredBackground.qml.orig
++++ /usr/share/lipstick-jolla-home-qt5/backgrounds/BlurredBackground.qml
+@@ -7,7 +7,8 @@
+ Background {
+     id: background
+ 
+-    property color color: Theme.rgba(palette.overlayBackgroundColor, 0.65)
++    property color color: palette.overlayBackgroundColor
++    //property color color: Theme.rgba(palette.overlayBackgroundColor, 0.65)
+ 
+     sourceItem: Lipstick.compositor.blurSource
+                 || Lipstick.compositor.wallpaper.applicationWallpaperItem
+                 
+## Solid colors for everything else in lipstick
+--- /usr/share/lipstick-jolla-home-qt5/backgrounds/DimmedBackground.qml.orig
++++ /usr/share/lipstick-jolla-home-qt5/backgrounds/DimmedBackground.qml
+@@ -27,9 +27,13 @@
+     property Item homeWallpaper
+ 
+     // HomeMaterials / LockscreenMaterials
+-    property color color: palette.colorScheme === Theme.DarkOnLight
++    /*property color color: palette.colorScheme === Theme.DarkOnLight
+             ? Theme.rgba(Theme.lightPrimaryColor, 0.4)
+-            : Theme.rgba(palette.highlightDimmerColor, Theme.highlightBackgroundOpacity)
++            : Theme.rgba(palette.highlightDimmerColor, Theme.highlightBackgroundOpacity)*/
++
++    property color color: palette.colorScheme === Theme.DarkOnLight
++            ? Theme.lightPrimaryColor
++            : palette.highlightDimmerColor
+ 
+     property QtObject materials
+
+
+## More solid color for the QuickScrollArea ## Can be made completely solid if wanted but the gradient should not eat too much performance
+--- /usr/lib64/qt5/qml/Sailfish/Silica/private/QuickScrollArea.qml.orig
++++ /usr/lib64/qt5/qml/Sailfish/Silica/private/QuickScrollArea.qml
+@@ -63,7 +63,8 @@
+     width: Theme.itemSizeExtraLarge
+     gradient: Gradient {
+         GradientStop { position: 0.0; color: "transparent" }
+-        GradientStop { position: 0.5; color: Theme.rgba(scrollUpButton.palette.highlightBackgroundColor, 0.3) }
++        //GradientStop { position: 0.5; color: Theme.rgba(scrollUpButton.palette.highlightBackgroundColor, 0.3) }
++        GradientStop { position: 0.5; color: scrollUpButton.palette.highlightBackgroundColor }
+         GradientStop { position: 1.0; color: "transparent" }
+     }
+             
+## Fix browser being black when not using default Page backgroundColor            
+--- /usr/share/sailfish-browser/pages/BrowserPage.qml.orig
++++ /usr/share/sailfish-browser/pages/BrowserPage.qml
+@@ -38,6 +38,7 @@
+     property alias title: webView.title
+     property alias webView: webView
+     property alias inputRegion: inputRegion
++    backgroundColor: Theme.rgba(palette.overlayBackgroundColor, 0)
+ 
+ 
+     function load(url, title) {
+             
